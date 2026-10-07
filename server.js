@@ -315,7 +315,7 @@ app.patch("/api/admin/orders/:id", auth, async (req, res) => {
 
 app.get("/health", (_req,res)=>res.json({ok:true,service:"kylo"}));
 
-app.get("/admin", (_req, res) => res.sendFile(path.join(__dirname, "public", "admin.html")));
+app.get("/6767", (_req, res) => res.sendFile(path.join(__dirname, "public", "admin.html")));
 app.get("/project/:token", (_req, res) => res.sendFile(path.join(__dirname, "public", "project.html")));
 app.get("/", (_req, res) => res.sendFile(path.join(__dirname, "index.html")));
 app.use((req, res, next) => {
