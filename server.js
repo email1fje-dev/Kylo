@@ -42,10 +42,6 @@ async function logEvent(orderId,eventType,actor="system",details=""){
   if(!db||!orderId)return;
   try{await db.from("order_events").insert([{order_id:orderId,event_type:eventType,actor,details:clean(details,700)}])}catch{}
 }
-async function logEvent(orderId,eventType,actor="system",details=""){
-  if(!db||!orderId)return;
-  try{await db.from("order_events").insert([{order_id:orderId,event_type:eventType,actor,details:clean(details,700)}])}catch{}
-}
 
 function auth(req, res, next) {
   const token = String(req.headers.authorization || "").replace(/^Bearer\s+/i, "");
@@ -317,7 +313,9 @@ app.patch("/api/admin/orders/:id", auth, async (req, res) => {
   res.json(data);
 });
 
-app.get("/health", (_req,res)=>res.json({ok:true,service:"kylo"}));\n\napp.get("/admin", (_req, res) => res.sendFile(path.join(__dirname, "public", "admin.html")));
+app.get("/health", (_req,res)=>res.json({ok:true,service:"kylo"}));
+
+app.get("/admin", (_req, res) => res.sendFile(path.join(__dirname, "public", "admin.html")));
 app.get("/project/:token", (_req, res) => res.sendFile(path.join(__dirname, "public", "project.html")));
 app.get("/", (_req, res) => res.sendFile(path.join(__dirname, "index.html")));
 app.use((req, res, next) => {
