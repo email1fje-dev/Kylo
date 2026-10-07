@@ -255,6 +255,8 @@ app.post("/api/orders/:token/messages", async (req, res) => {
   res.status(201).json(data);
 });
 
+app.get("/api/admin/login", auth, (_req, res) => res.json({ ok: true }));
+
 app.get("/api/admin/system", auth, (_req, res) => {
   res.json({
     ai_enabled: Boolean(OPENROUTER_API_KEY),
