@@ -288,6 +288,8 @@ app.post("/api/admin/orders/:id/messages", auth, async (req, res) => {
   if (!content) return res.status(400).json({ error: "Message is empty." });
   const { data, error } = await db.from("messages").insert([{ order_id: req.params.id, sender: "admin", content }]).select("id,sender,content,created_at").single();
   if (error) return res.status(400).json({ error: error.message });
+  await logEvent(req.params.id,"ADMIN_MESSAGE","admin",content);
+  await db.from("orders").update({ updated_at: new Date().toISOString() }).eq("id", req.params.id);
   res.status(201).json(data);
 });
 
@@ -312,6 +314,9 @@ app.patch("/api/admin/orders/:id", auth, async (req, res) => {
   patch.updated_at = new Date().toISOString();
   const { data, error } = await db.from("orders").update(patch).eq("id", req.params.id).select("*").single();
   if (error) return res.status(400).json({ error: error.message });
+  if (requestedStatus) await logEvent(req.params.id,"STATUS_CHANGED","admin","Status → "+requestedStatus);
+  if (req.body.payment_status && allowedPayment.includes(req.body.payment_status)) await logEvent(req.params.id,"PAYMENT_STATUS_CHANGED","admin","Payment → "+req.body.payment_status);
+  if (req.body.final_robux !== undefined && req.body.final_robux !== null && req.body.final_robux !== "") await logEvent(req.params.id,"REWARD_UPDATED","admin","Final Robux → "+patch.final_robux);
   res.json(data);
 });
 
@@ -323,6 +328,14 @@ app.get("/", (_req, res) => res.sendFile(path.join(__dirname, "index.html")));
 app.use((req, res, next) => {
   if (req.method === "GET" && !req.path.startsWith("/api/")) return res.sendFile(path.join(__dirname, "index.html"));
   next();
+});
+
+app.use((err, req, res, _next) => {
+  console.error("Kylo request error:", err);
+  if (res.headersSent) return;
+  const api = req.path.startsWith("/api/");
+  if (api) return res.status(500).json({ error: "Internal server error." });
+  res.status(500).send("Kylo server error.");
 });
 
 const port = process.env.PORT || 3000;
