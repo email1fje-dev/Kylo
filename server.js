@@ -42,6 +42,10 @@ async function logEvent(orderId,eventType,actor="system",details=""){
   if(!db||!orderId)return;
   try{await db.from("order_events").insert([{order_id:orderId,event_type:eventType,actor,details:clean(details,700)}])}catch{}
 }
+async function logEvent(orderId,eventType,actor="system",details=""){
+  if(!db||!orderId)return;
+  try{await db.from("order_events").insert([{order_id:orderId,event_type:eventType,actor,details:clean(details,700)}])}catch{}
+}
 
 function auth(req, res, next) {
   const token = String(req.headers.authorization || "").replace(/^Bearer\s+/i, "");
@@ -220,6 +224,7 @@ app.post("/api/orders", async (req, res) => {
     sender: "admin",
     content: "Thanks for the request! I’ve received your project details and will review the scope here."
   }]);
+  await logEvent(data.id,"REQUEST_CREATED","system","New project request received");
 
   res.status(201).json({ order: data, client_token: token, roblox_username: ROBLOX_USERNAME });
 });
@@ -232,7 +237,8 @@ async function getOrderByToken(token) {
     .maybeSingle();
   if (error || !data) return null;
   const msgs = await db.from("messages").select("id,sender,content,created_at").eq("order_id", data.id).order("created_at", { ascending: true });
-  return { ...data, messages: msgs.data || [] };
+  const events = await db.from("order_events").select("id,event_type,actor,details,created_at").eq("order_id", data.id).order("created_at", { ascending: true });
+  return { ...data, messages: msgs.data || [], events: events.data || [] };
 }
 
 app.get("/api/orders/:token", async (req, res) => {
@@ -249,6 +255,7 @@ app.post("/api/orders/:token/messages", async (req, res) => {
   if (!content) return res.status(400).json({ error: "Message is empty." });
   const { data, error } = await db.from("messages").insert([{ order_id: order.id, sender: "client", content }]).select("id,sender,content,created_at").single();
   if (error) return res.status(400).json({ error: error.message });
+  await logEvent(order.id,"CLIENT_MESSAGE","client",content);
   res.status(201).json(data);
 });
 
@@ -273,7 +280,8 @@ app.get("/api/admin/orders/:id", auth, async (req, res) => {
   const { data, error } = await db.from("orders").select("*").eq("id", req.params.id).single();
   if (error) return res.status(404).json({ error: "Project request not found." });
   const msgs = await db.from("messages").select("id,sender,content,created_at").eq("order_id", req.params.id).order("created_at", { ascending: true });
-  res.json({ ...data, messages: msgs.data || [] });
+  const events = await db.from("order_events").select("id,event_type,actor,details,created_at").eq("order_id", req.params.id).order("created_at", { ascending: true });
+  res.json({ ...data, messages: msgs.data || [], events: events.data || [] });
 });
 
 app.post("/api/admin/orders/:id/messages", auth, async (req, res) => {
