@@ -38,6 +38,10 @@ const clamp = (n, min, max) => Math.max(min, Math.min(max, Number.isFinite(Numbe
 const clean = (value, max = 2000) => String(value ?? "").trim().slice(0, max);
 const tokenHash = (token) => crypto.createHash("sha256").update(token).digest("hex");
 const makeToken = () => crypto.randomBytes(24).toString("hex");
+async function logEvent(orderId,eventType,actor="system",details=""){
+  if(!db||!orderId)return;
+  try{await db.from("order_events").insert([{order_id:orderId,event_type:eventType,actor,details:clean(details,700)}])}catch{}
+}
 
 function auth(req, res, next) {
   const token = String(req.headers.authorization || "").replace(/^Bearer\s+/i, "");
@@ -281,12 +285,20 @@ app.post("/api/admin/orders/:id/messages", auth, async (req, res) => {
   res.status(201).json(data);
 });
 
+app.get("/api/admin/orders/:id/events", auth, async (req,res)=>{
+  if(!db)return res.status(500).json({error:"Database is not configured"});
+  const {data,error}=await db.from("order_events").select("id,event_type,actor,details,created_at").eq("order_id",req.params.id).order("created_at",{ascending:true});
+  if(error)return res.status(400).json({error:error.message});
+  res.json(data||[]);
+});
+
 app.patch("/api/admin/orders/:id", auth, async (req, res) => {
   if (!db) return res.status(500).json({ error: "Database is not configured" });
   const allowedStatus = ["REQUESTED","REVIEWING","ACCEPTED","IN_PROGRESS","PAYMENT_PENDING","PAID","COMPLETED","REJECTED","CLOSED"];
   const allowedPayment = ["PENDING","PAID"];
   const patch = {};
-  if (req.body.status && allowedStatus.includes(req.body.status)) patch.status = req.body.status;
+  const requestedStatus = req.body.status && allowedStatus.includes(req.body.status) ? req.body.status : null;
+  if (requestedStatus) patch.status = requestedStatus;
   if (req.body.payment_status && allowedPayment.includes(req.body.payment_status)) patch.payment_status = req.body.payment_status;
   if (req.body.final_robux !== undefined && req.body.final_robux !== null && req.body.final_robux !== "") {
     patch.final_robux = Math.round(clamp(req.body.final_robux, 100, 1000000));
@@ -297,7 +309,7 @@ app.patch("/api/admin/orders/:id", auth, async (req, res) => {
   res.json(data);
 });
 
-app.get("/admin", (_req, res) => res.sendFile(path.join(__dirname, "public", "admin.html")));
+app.get("/health", (_req,res)=>res.json({ok:true,service:"kylo"}));\n\napp.get("/admin", (_req, res) => res.sendFile(path.join(__dirname, "public", "admin.html")));
 app.get("/project/:token", (_req, res) => res.sendFile(path.join(__dirname, "public", "project.html")));
 app.get("/", (_req, res) => res.sendFile(path.join(__dirname, "index.html")));
 app.use((req, res, next) => {
