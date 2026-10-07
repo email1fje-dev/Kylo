@@ -46,15 +46,16 @@ footer{border-top:1px solid rgba(255,255,255,.055);padding:35px 0 50px;color:#66
 
 <style id="mobile-menu-style">
 @media (max-width:900px){
-  .nav{position:sticky;top:0;z-index:1000;backdrop-filter:blur(18px);background:rgba(9,9,9,.78)}
-  .navin{position:relative}
-  .menu{display:flex;position:relative;z-index:1003}
-  .navlinks{position:absolute;top:calc(100% + 12px);left:16px;right:16px;display:flex!important;flex-direction:column;align-items:stretch;gap:6px;padding:10px;border:1px solid rgba(255,210,28,.18);border-radius:20px;background:rgba(13,13,12,.97);box-shadow:0 24px 70px rgba(0,0,0,.55),0 0 45px rgba(255,210,28,.08);opacity:0;visibility:hidden;pointer-events:none;transform:translateY(-10px) scale(.98);transition:opacity .22s ease,transform .22s ease,visibility .22s ease}
-  .navlinks.open{opacity:1;visibility:visible;pointer-events:auto;transform:translateY(0) scale(1)}
+  .nav{position:sticky;top:0;z-index:9999;backdrop-filter:blur(18px);background:rgba(9,9,9,.94)}
+  .navin{position:relative;z-index:10000}
+  .menu{display:flex;position:relative;z-index:10002}
+  .navlinks{position:fixed!important;top:76px;left:14px;right:14px;z-index:10001;display:flex!important;flex-direction:column;align-items:stretch;gap:6px;padding:10px;border:1px solid rgba(255,210,28,.22);border-radius:20px;background:#0d0d0c;box-shadow:0 24px 70px rgba(0,0,0,.75),0 0 45px rgba(255,210,28,.1);opacity:0;visibility:hidden;pointer-events:none;transform:translateY(-10px) scale(.98);transition:opacity .22s ease,transform .22s ease,visibility .22s ease}
+  .navlinks.open{opacity:1!important;visibility:visible!important;pointer-events:auto!important;transform:translateY(0) scale(1)}
   .navlinks a{display:flex!important;align-items:center;justify-content:space-between;width:100%;padding:15px 16px;border-radius:13px}
   .navlinks a:hover{background:rgba(255,255,255,.055)}
   .navlinks .navcta{justify-content:center;margin-top:4px}
 }
+@media (min-width:901px){.menu{display:none!important}}
 @media (min-width:901px){.menu{display:none!important}}
 </style><body><script>document.documentElement.classList.add("js");function toggleMenu(){const n=document.querySelector(".navlinks"),b=document.getElementById("menuBtn");const open=n.classList.toggle("open");b.classList.toggle("open",open);b.setAttribute("aria-expanded",String(open));b.setAttribute("aria-label",open?"Close menu":"Open menu")}document.addEventListener("DOMContentLoaded",()=>{const n=document.querySelector(".navlinks"),b=document.getElementById("menuBtn");if(!n||!b)return;const close=()=>{n.classList.remove("open");b.classList.remove("open");b.setAttribute("aria-expanded","false")};b.addEventListener("click",e=>{e.stopPropagation();n.classList.toggle("open");b.classList.toggle("open",n.classList.contains("open"));b.setAttribute("aria-expanded",String(n.classList.contains("open")))});n.addEventListener("click",e=>{if(e.target.closest("a")&&window.innerWidth<=900)close()});document.addEventListener("click",e=>{if(window.innerWidth<=900&&n.classList.contains("open")&&!n.contains(e.target)&&!b.contains(e.target))close()});window.addEventListener("resize",()=>{if(window.innerWidth>900)close()})});</script><div class="cursor-glow" id="cursorGlow"></div>
 <header class="nav"><div class="container navin"><a class="brand" href="#">Kylo<span>.</span></a><div class="navlinks"><a href="#work">Work</a><a href="#build">What I Build</a><a href="#about">About</a><a class="navcta" href="/project/new">Start a Project ↗</a></div><button class="menu" id="menuBtn" aria-label="Open menu" aria-expanded="false" type="button"><span></span><span></span><span></span></button></div></header>
