@@ -18,6 +18,21 @@ const ROBLOX_USERNAME = process.env.ROBLOX_USERNAME || "psk062";
 const db = SUPABASE_URL && SUPABASE_KEY
   ? createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } })
   : null;
+const orderRate = new Map();
+
+function orderAllowed(req) {
+  const ip = String(req.headers["x-forwarded-for"] || req.socket.remoteAddress || "unknown").split(",")[0].trim();
+  const now = Date.now();
+  const recent = orderRate.get(ip) || [];
+  const kept = recent.filter(t => now - t < 60 * 60 * 1000);
+  if (kept.length >= 8) return false;
+  kept.push(now);
+  orderRate.set(ip, kept);
+  if (orderRate.size > 5000) {
+    for (const [k, arr] of orderRate) if (!arr.some(t => now - t < 60 * 60 * 1000)) orderRate.delete(k);
+  }
+  return true;
+}
 
 const clamp = (n, min, max) => Math.max(min, Math.min(max, Number.isFinite(Number(n)) ? Number(n) : min));
 const clean = (value, max = 2000) => String(value ?? "").trim().slice(0, max);
@@ -165,6 +180,7 @@ app.delete("/api/projects/:id", auth, async (req, res) => {
 });
 
 app.post("/api/orders", async (req, res) => {
+  if (!orderAllowed(req)) return res.status(429).json({ error: "Too many requests. Please try again later." });
   if (!db) return res.status(500).json({ error: "Database is not configured" });
   const b = req.body || {};
   const required = ["client_name", "contact", "project_type", "title", "description"];
@@ -230,6 +246,15 @@ app.post("/api/orders/:token/messages", async (req, res) => {
   const { data, error } = await db.from("messages").insert([{ order_id: order.id, sender: "client", content }]).select("id,sender,content,created_at").single();
   if (error) return res.status(400).json({ error: error.message });
   res.status(201).json(data);
+});
+
+app.get("/api/admin/system", auth, (_req, res) => {
+  res.json({
+    ai_enabled: Boolean(OPENROUTER_API_KEY),
+    ai_model: OPENROUTER_MODEL,
+    reward_username: ROBLOX_USERNAME,
+    database_connected: Boolean(db)
+  });
 });
 
 app.get("/api/admin/orders", auth, async (_req, res) => {
