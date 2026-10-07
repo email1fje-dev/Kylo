@@ -266,6 +266,7 @@ app.patch("/api/admin/orders/:id", auth, async (req, res) => {
   if (req.body.final_robux !== undefined && req.body.final_robux !== null && req.body.final_robux !== "") {
     patch.final_robux = Math.round(clamp(req.body.final_robux, 100, 1000000));
   }
+  patch.updated_at = new Date().toISOString();
   const { data, error } = await db.from("orders").update(patch).eq("id", req.params.id).select("*").single();
   if (error) return res.status(400).json({ error: error.message });
   res.json(data);
